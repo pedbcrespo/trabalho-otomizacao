@@ -1,3 +1,10 @@
+pares_sinais_inversos = {
+  '>=':'<=',
+  '<=':'>=',
+  '==':'!=',
+  '!=':'=='
+}
+
 def separa_numeros(linha):
     lista = []
     for val in linha.split():
@@ -58,16 +65,20 @@ def forma_canonica(A, sinal):
             novo_A = adiciona_valor_A(novo_A, novo_A[i], 0.0)
     return novo_A
 
-def tratamento_sa(sa, sinal_index):
+def tratamento_sa(dados_arquivo, sinal_index):
+    sa = dados_arquivo['sa']
     A = []
     b = []
+    c = dados_arquivo['coeficiente']
     sinais = []
     for exp in sa:       
-        A.append(exp[:sinal_index])
-        b.append(exp[-1])
+        b.append(exp[-1] if exp[-1] >= 0 else (exp[-1]*-1))
+        A.append(exp[:sinal_index] if exp[-1] >= 0 else list(map(lambda x: x*(-1), exp[:sinal_index])))
         sinais.append(exp[sinal_index+1])
-    return forma_canonica(A, sinais), b
-
+    A = forma_canonica(A, sinais)
+    while len(c) < len(A[0]):
+        c.append(0.0)
+    return A, b, c
 
 def simplex(tableau):
     pass
@@ -118,5 +129,5 @@ def main():
 if __name__ == "__main__":
     # main()
     dados_arquivo = le_arquivo('problema1.txt')
-    A, b = tratamento_sa(dados_arquivo['sa'], int(dados_arquivo['meta']['num_var_original']-1))
+    A, b = tratamento_sa(dados_arquivo, int(dados_arquivo['meta']['num_var_original']-1))
     print(A, b)
