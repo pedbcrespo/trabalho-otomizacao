@@ -1,0 +1,12 @@
+//nos arquivos para teste não haverá comentários; os comentários deste arquivo são apenas para explicação dos valores
+//os arquivos começarão sempre com a linha de baixo
+3 4 1	//estes três números indicam o número de restrições, o número de variáveis originais (não são contabilizadas as variáveis de folga nem as artificiais), e o sentido da otimização (1=maximização;0=minimização)
+5 6 7 -4.23 //coeficientes da função-objetivo
+3 -2 5.5 -9 <= 4 //os coeficientes das variáveis originais na primeira restrição; o sinal de desigualdade; o valor do termo independente
+-1 0 4.2 -1 == 5 //idem
+2 2 -4.1 -5.9 >= -3 //caso o lado direito apareça negativo, não esquecer de multiplicar a linha por -1
+//as variáveis de folga e as artificais precisam ser acrescentadas conforme necessário
+//sinal <= acrescentar apenas variável de folga
+//sinal == acrescentar apenas variável artificial
+//sinal >= acrescentar variável de folga negativa e artificial
+//todas as variáveis serão consideradas >=0 (não-negativas)
