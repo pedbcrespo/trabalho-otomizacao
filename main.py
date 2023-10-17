@@ -1,8 +1,7 @@
 pares_sinais_inversos = {
   '>=':'<=',
   '<=':'>=',
-  '==':'!=',
-  '!=':'=='
+  '==':'==',
 }
 
 def separa_numeros(linha):
