@@ -124,3 +124,15 @@ def trocar_variaveis(base, sobra, linha_pivo, coluna_pivo, tabela):
   for i in range(len(base)):
     base[i][index_coluna_sair] = linha_pivo[i]
   return base
+
+def simplex(dados):
+  tabela = tratamento_inicial(dados)
+  num_restricoes = int(dados['meta']['num_restricao'])
+  base, sobra = monta_base_inicial(tabela, dados['meta']['num_restricao'])
+  while existe_var_nao_basica_melhora_fo(sobra, tabela):
+    if not existe_var_basica_para_sair(base, tabela):
+      return f'O PPL é ilimitado'
+    coluna_pivo = pega_coluna_pivo(sobra, tabela)
+    linha_pivo = pega_linha_pivo(coluna_pivo, tabela)
+    base = trocar_variaveis(base, sobra, linha_pivo, coluna_pivo, tabela)
+  return f'Solucao Otima: {base}'
