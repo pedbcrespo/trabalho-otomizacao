@@ -37,89 +37,90 @@ def le_arquivo(nome_arquivo):
         return dicionario_arquivo
 
 # FUNCOES PARA REALIZAR CALCULOS DE MATRIZES
-def adiciona_valor_A(A, exp, valor):
-    for a in A:
-        if a == exp:
-            a.append(valor)
-        else:
-            a.append(0.0)
-    return A
+def trata_expressao_com_b_negativo(A, b, sinal):
+  sinal_inverso = {'<=':'>=', '>=':'<=', '==':'=='}
+  if b < 0:
+    A = list(map(lambda valor: valor*(-1), A))
+    b = b*(-1)
+    sinal = sinal_inverso[sinal]
+  return A, b, sinal
 
-def forma_canonica(A, sinal):
-    novo_A = A
-    for i in range(len(A)):
-        if sinal[i] == '<=':
-            novo_A = adiciona_valor_A(novo_A, novo_A[i], 1.0)
-        elif sinal[i] == '>=':
-            novo_A = adiciona_valor_A(novo_A, novo_A[i], -1.0)
-        else:
-            novo_A = adiciona_valor_A(novo_A, novo_A[i], 0.0)
-    return novo_A
+def forma_canonica(sa, index_sinal):
+  A = list(map(lambda expressao: expressao[:index_sinal], sa))
+  b = list(map(lambda expressao: expressao[-1], sa))
+  sinais = list(map(lambda expressao: expressao[index_sinal], sa))
+  valor_sinal = {'<=':1.0,'>=':-1.0,'==':0.0}
+  for i in range(len(sa)):
+    A[i], b[i], sinais[i] = trata_expressao_com_b_negativo(A[i],b[i],sinais[i])
+    valor = valor_sinal[sinais[i]]
+    for j in range(len(sa)):
+      A[j].append(valor if i==j else 0.0)
+  matriz_canonica = []
+  for i in range(len(sa)):
+    matriz_canonica.append(A[i] + [b[i]])
+  return matriz_canonica, A, b
 
-def tratamento_sa(dados_arquivo, sinal_index):
-    sa = dados_arquivo['sa']
-    A = []
-    b = []
-    c = dados_arquivo['coeficiente']
-    sinais = []
-    pares_sinais_inversos = {'>=':'<=','<=':'>=','==':'=='}
-    for exp in sa:
-        b.append(exp[-1] if exp[-1] >= 0 else (exp[-1]*-1))
-        A.append(exp[:sinal_index+1] if exp[-1] >= 0 else list(map(lambda x: x*(-1), exp[:sinal_index])))
-        sinais.append(exp[sinal_index+1] if exp[-1] >= 0 else pares_sinais_inversos[exp[sinal_index+1]])
-    A = forma_canonica(A, sinais)
-    return np.array(A), np.array(b), np.array(c)
+def ajusta_fo(fo, sa_canonico, sentido):
+  diferenca = len(sa_canonico[0]) - len(fo)
+  if sentido:
+    fo = list(map(lambda valor: valor*(-1), fo))
+  for i in range(diferenca):
+    fo.append(0.0)
+  return fo
 
-def gera_combinacoes(qtd_linhas, qtd_colunas):
-    valores = [i for i in range(qtd_linhas)]
-    combinacoes = permutations(valores)
-    lista_combinacoes = []
-    for combinacao in combinacoes:
-      lista_combinacoes.append(list(combinacao))
-    return lista_combinacoes
+def tratamento_inicial(dados):
+  fo = dados['coeficiente']
+  sa = dados['sa']
+  sentido = int(dados['meta']['sentido_otimizacao'])
+  qtd_variaveis = int(dados['meta']['num_var_original'])
+  sa_canonico, A, b = forma_canonica(sa, qtd_variaveis)
+  fo_completo_com_zeros = ajusta_fo(fo, sa_canonico, sentido)
+  sa_canonico.append(fo_completo_com_zeros)
+  return sa_canonico
 
-def gera_matriz_B_R(A, combinacao_colunas):
-    A_transposta = A.T
-    num_linhas, num_colunas = A.shape
-    combinacao_R = list(filter(lambda x: x not in combinacao_colunas, [i for i in range(num_colunas)]))
-    matriz_b = np.array([A_transposta[i] for i in combinacao_colunas])
-    matriz_r = np.array([A_transposta[i] for i in combinacao_R])
-    return np.array(matriz_b.T)
+def monta_base_inicial(tabela, numero_restricoes):
+  base = []
+  contador = 0
+  tabela_sem_ultima_coluna = [linha[:-1] for linha in tabela]
+  A = tabela_sem_ultima_coluna[:-1]
+  base = [linha[-numero_restricoes:] for linha in A]
+  sobra = [linha[:-numero_restricoes] for linha in tabela_sem_ultima_coluna]
+  return base, sobra
 
-def gera_solucao(B,b):
-    B_inversa = np.linalg.inv(np.array(B))
-    solucao = np.dot(B_inversa, b)
-    return solucao
+def pega_linha_pivo(pivo, tabela):
+  ultima_coluna = [linha[-1] for linha in tabela]
+  razao = []
+  for i in range(len(pivo)):
+    valor = round(ultima_coluna[i]/pivo[i], 2) if pivo[i] != 0 else 0.0
+    razao.append(valor)
+  razao = list(filter(lambda valor: valor > 0, razao))
+  index_menor_valor = razao.index(min(razao))
+  return tabela[index_menor_valor]
 
-def buscar_melhor_solucao(solucoes, c):
-    resultados = [np.dot(c, solucao) for solucao in solucoes]
-    return max(resultados)
+def pega_coluna_pivo(sobra, tabela):
+  ultima_linha = tabela[-1]
+  index = ultima_linha.index(min(ultima_linha))
+  return [linha[index] for linha in sobra]
 
-def junta(matriz_solucao, num_variaveis, combinacao):
-  solucao = []
-  for i in range(int(num_variaveis)):
-      valor = 0.0
-      if i in combinacao:
-        index = combinacao.index(i)
-        valor = matriz_solucao[index]
-      solucao.append(valor)
-  return np.array(solucao)
+def existe_var_nao_basica_melhora_fo(sobra, tabela):
+  ultima_linha = sobra[-1]
+  menor_valor = min(ultima_linha)
+  return menor_valor < 0
 
-def simplex(dados_arquivo):
-    A, b, c = tratamento_sa(dados_arquivo, int(dados_arquivo['meta']['num_var_original']-1))
-    qtd_linha_A, qtd_coluna_A = A.shape
-    combinacoes = gera_combinacoes(qtd_linha_A, qtd_coluna_A)
-    solucoes = []
-    for combinacao in combinacoes:
-        B, R = gera_matriz_B_R(A, combinacao, qtd_coluna_A)
-        print("MATRIZ B")
-        print(B)
-        print("==============================")
-        determinante = np.linalg.det(B)
-        if determinante != 0:
-            solucoes.append(gera_solucao(B,b))
-    return buscar_melhor_solucao(solucoes, c)
+def existe_var_basica_para_sair(base, tabela):
+  pass
 
-if __name__ == '__main__':
-    dados_arquivo = le_arquivo('problema_lp\problema1.txt')
-    print(simplex(dados_arquivo))
+def trocar_variaveis(base, sobra, linha_pivo, coluna_pivo, tabela):
+  # LINHA_PIVO => COLUNA DA BASE QUE VAI SAIR
+  # COLUNA_PIVO => A A LINHA DA SOBRA QUE VAI ENTRAR
+  # A COLUNA_PIVO TERA DE SER ALTERADA PARA QUE FIQUE O MAIS PROXIMO DA IDENTIDADE
+  print('base ',base)
+  print('sobra', sobra)
+  print('linha pivo', linha_pivo)
+  print('coluna pivo', coluna_pivo)
+  linha_pivo = linha_pivo[:len(sobra[0])]
+  index_coluna_sair = sobra.index(linha_pivo)
+
+  for i in range(len(base)):
+    base[i][index_coluna_sair] = linha_pivo[i]
+  return base
