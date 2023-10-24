@@ -110,6 +110,22 @@ def existe_var_nao_basica_melhora_fo(sobra, tabela):
 def existe_var_basica_para_sair(base, tabela):
   pass
 
+
+def gera_matriz_identidade(base, coluna_pivo, indice_coluna_sbst, tabela):
+  print('tabbela[',indice_coluna_sbst,']: ', tabela[indice_coluna_sbst])
+  while True:
+    linha_para_ser_modficada = tabela[indice_coluna_sbst]
+    if linha_para_ser_modficada[indice_coluna_sbst] != 1:
+      valor = coluna_pivo[indice_coluna_sbst]
+      linha_para_ser_modficada = list(map(lambda val: round(val/valor, 2), linha_para_ser_modficada))
+    elif len(inicio_linha) > 0 and ft.reduce(lambda a,b: a+b, inicio_linha) != 0:
+      pass
+    elif len(restante_linha) and ft.reduce(lambda a,b: a+b, restante_linha) != 0:
+      pass
+    inicio_linha = linha_para_ser_modficada[:indice_coluna_sbst]
+    restante_linha = linha_para_ser_modficada[indice_coluna_sbst+1:]
+  return tabela
+
 def trocar_variaveis(base, sobra, linha_pivo, coluna_pivo, tabela):
   # LINHA_PIVO => COLUNA DA BASE QUE VAI SAIR
   # COLUNA_PIVO => A A LINHA DA SOBRA QUE VAI ENTRAR
