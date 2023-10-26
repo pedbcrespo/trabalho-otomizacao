@@ -124,8 +124,13 @@ def existe_var_nao_basica_melhora_fo(sobra, tabela):
   menor_valor = min(ultima_linha)
   return menor_valor < 0
 
-def existe_var_basica_para_sair(base, tabela):
-  pass
+def existe_var_basica_para_sair(base, coluna_pivo, tabela):
+  b = [linha[-1] for linha in tabela]
+  razao = []
+  for i in range(len(coluna_pivo)):
+    razao.append(b[i]/coluna_pivo[i] if coluna_pivo != 0.0 else 0.0)
+  resultados_positivos = list(filter(lambda x: x>0, razao))
+  return resultados_positivos != []
 
 def calcula_valor_para_1(linha, indice_coluna_sair, tabela):
   valor = linha[indice_coluna_sair]
@@ -203,9 +208,9 @@ def simplex(dados):
   num_restricoes = int(dados['meta']['num_restricao'])
   base, sobra, indice_colunas = monta_base_inicial(tabela, num_restricoes)
   while existe_var_nao_basica_melhora_fo(sobra, tabela):
-    if not existe_var_basica_para_sair(base, tabela):
-      return f'O PPL é ilimitado'
     coluna_pivo = pega_coluna_pivo(sobra, tabela)
     linha_pivo = pega_linha_que_vai_sair(coluna_pivo, tabela)
+    if not existe_var_basica_para_sair(base, coluna_pivo, tabela):
+      return f'O PPL é ilimitado'
     base, sobra, tabela = trocar_variaveis(base, sobra, linha_pivo, coluna_pivo, num_restricoes, indice_colunas, tabela)
   return f'Solucao Otima: {base}'
