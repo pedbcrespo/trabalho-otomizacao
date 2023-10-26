@@ -80,14 +80,28 @@ def tratamento_inicial(dados):
 
 def monta_base_inicial(tabela, numero_restricoes):
   base = []
-  contador = 0
   tabela_sem_ultima_coluna = [linha[:-1] for linha in tabela]
   A = tabela_sem_ultima_coluna[:-1]
   base = [linha[-numero_restricoes:] for linha in A]
   sobra = [linha[:-numero_restricoes] for linha in tabela_sem_ultima_coluna]
+  indice_colunas = [i for i in range(len(A[0]))][-numero_restricoes:]
+  return base, sobra, indice_colunas
+
+def monta_base(tabela, num_restricoes, indices_colunas):
+  tabela_sem_ultima_coluna = [linha[:-1] for linha in tabela]
+  A = tabela_sem_ultima_coluna[:-1]
+  base = [[] for linha in A]
+  sobra = [[] for linha in A]
+  for j in indices_colunas:
+    for i in range(len(A)):
+      base[i].append(A[i][j])
+  indices_sobra = [i for i in range(len(A[0])) if i not in indices_colunas]
+  for j in indices_sobra:
+    for i in range(len(A)):
+      sobra[i].append(A[i][j])
   return base, sobra
 
-def pega_linha_pivo(pivo, tabela):
+def pega_linha_que_vai_sair(pivo, tabela):
   ultima_coluna = [linha[-1] for linha in tabela]
   razao = []
   for i in range(len(pivo)):
@@ -96,11 +110,14 @@ def pega_linha_pivo(pivo, tabela):
   razao = list(filter(lambda valor: valor > 0, razao))
   index_menor_valor = razao.index(min(razao))
   return tabela[index_menor_valor]
+  
 
 def pega_coluna_pivo(sobra, tabela):
   ultima_linha = tabela[-1]
   index = ultima_linha.index(min(ultima_linha))
+  print('index', index)
   return [linha[index] for linha in sobra]
+
 
 def existe_var_nao_basica_melhora_fo(sobra, tabela):
   ultima_linha = sobra[-1]
@@ -110,45 +127,85 @@ def existe_var_nao_basica_melhora_fo(sobra, tabela):
 def existe_var_basica_para_sair(base, tabela):
   pass
 
+def calcula_valor_para_1(linha, indice_coluna_sair, tabela):
+  valor = linha[indice_coluna_sair]
+  if valor == 0:
+    linha_selecionada = []
+    for linha in tabela:
+      if linha[indice_coluna_sair] != 0:
+        linha_selecionada = linha
+        break
+    valor = linha_selecionada[indice_coluna_sair]
+    linha_selecionada = list(map(lambda valor_linha: valor_linha/valor, linha_selecionada))
+    return [linha[i] + linha_selecionada[i] for i in range(len(linha))]
 
-def gera_matriz_identidade(base, coluna_pivo, indice_coluna_sbst, tabela):
-  print('tabbela[',indice_coluna_sbst,']: ', tabela[indice_coluna_sbst])
+  return list(map(lambda val: val/valor, linha))
+
+def calcula_valor_para_0(linha, linha_base, indice_coluna_sair):
+  razao = linha[indice_coluna_sair]/linha_base[indice_coluna_sair]
+  linha_base_multiplicada_pela_razao = list(map(lambda x: x*razao, linha_base))
+  return [linha[i]-linha_base_multiplicada_pela_razao[i] for i in range(len(linha))]
+
+def eh_identidade(base):
+  resultado = True
+  for i in range(len(base)):
+    for j in range(len(base[i])):
+      if i == j:
+        resultado = resultado and (base[i][j] == 1.0 or base[i][j] == -1.0)
+      else:
+        resultado = resultado and base[i][j] == 0.0
+  return resultado
+
+def imprime_tabela(tabela):
+  print('[')
+  for linha in tabela:
+    print(linha)
+  print(']')
+
+def gera_matriz_identidade(base, coluna_pivo, linha_pivo, index_coluna_pivo, num_restricoes, indice_colunas, tabela):
+  index = tabela.index(linha_pivo)
+  tabela[index] = calcula_valor_para_1(linha_pivo, index_coluna_pivo, tabela)
+  sobra = []
   while True:
-    linha_para_ser_modficada = tabela[indice_coluna_sbst]
-    if linha_para_ser_modficada[indice_coluna_sbst] != 1:
-      valor = coluna_pivo[indice_coluna_sbst]
-      linha_para_ser_modficada = list(map(lambda val: round(val/valor, 2), linha_para_ser_modficada))
-    elif len(inicio_linha) > 0 and ft.reduce(lambda a,b: a+b, inicio_linha) != 0:
-      pass
-    elif len(restante_linha) and ft.reduce(lambda a,b: a+b, restante_linha) != 0:
-      pass
-    inicio_linha = linha_para_ser_modficada[:indice_coluna_sbst]
-    restante_linha = linha_para_ser_modficada[indice_coluna_sbst+1:]
-  return tabela
+    for i in range(len(tabela)):
+      if i == index:
+        continue
+      tabela[i] = calcula_valor_para_0(tabela[i], tabela[index], index_coluna_pivo)
+    nova_base, sobra = monta_base(tabela, num_restricoes, indice_colunas)
+    if eh_identidade(nova_base):
+      break
+  return nova_base, sobra, tabela
 
-def trocar_variaveis(base, sobra, linha_pivo, coluna_pivo, tabela):
+def pega_index_coluna(coluna_pivo, tabela):
+  index = None
+  for j in range(len(coluna_pivo)):
+    resultado = True
+    for i in range(len(tabela)):
+      resultado = resultado and tabela[i][j] == coluna_pivo[i]
+    if resultado:
+      index = j
+      break
+  return index
+
+def trocar_variaveis(base, sobra, linha_pivo, coluna_pivo, num_restricoes, indice_colunas, tabela):
   # LINHA_PIVO => COLUNA DA BASE QUE VAI SAIR
   # COLUNA_PIVO => A A LINHA DA SOBRA QUE VAI ENTRAR
   # A COLUNA_PIVO TERA DE SER ALTERADA PARA QUE FIQUE O MAIS PROXIMO DA IDENTIDADE
-  print('base ',base)
-  print('sobra', sobra)
-  print('linha pivo', linha_pivo)
-  print('coluna pivo', coluna_pivo)
-  linha_pivo = linha_pivo[:len(sobra[0])]
-  index_coluna_sair = sobra.index(linha_pivo)
-
-  for i in range(len(base)):
-    base[i][index_coluna_sair] = linha_pivo[i]
-  return base
+  b = [linha[-1] for linha in tabela]
+  index_linha_sair = tabela.index(linha_pivo)
+  index_coluna_pivo = pega_index_coluna(coluna_pivo, tabela)
+  indice_colunas[index_linha_sair] = index_coluna_pivo
+  base, sobra, tabela = gera_matriz_identidade(base, coluna_pivo, linha_pivo, index_coluna_pivo, num_restricoes, indice_colunas, tabela)
+  return base, sobra, tabela
 
 def simplex(dados):
   tabela = tratamento_inicial(dados)
   num_restricoes = int(dados['meta']['num_restricao'])
-  base, sobra = monta_base_inicial(tabela, dados['meta']['num_restricao'])
+  base, sobra, indice_colunas = monta_base_inicial(tabela, num_restricoes)
   while existe_var_nao_basica_melhora_fo(sobra, tabela):
     if not existe_var_basica_para_sair(base, tabela):
       return f'O PPL é ilimitado'
     coluna_pivo = pega_coluna_pivo(sobra, tabela)
-    linha_pivo = pega_linha_pivo(coluna_pivo, tabela)
-    base = trocar_variaveis(base, sobra, linha_pivo, coluna_pivo, tabela)
+    linha_pivo = pega_linha_que_vai_sair(coluna_pivo, tabela)
+    base, sobra, tabela = trocar_variaveis(base, sobra, linha_pivo, coluna_pivo, num_restricoes, indice_colunas, tabela)
   return f'Solucao Otima: {base}'
