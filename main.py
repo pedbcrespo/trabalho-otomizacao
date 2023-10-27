@@ -23,6 +23,7 @@ def opcao3():
 
 array_funcao = [opcao1,opcao2, opcao3]
 while True:
+    clear()
     print("Menu:")
     print("1) Executar o Simplex, mostrando resultados intermediários")
     print("2) Executar o Simplex, mostrando apenas o resultado final")
@@ -35,4 +36,5 @@ while True:
     elif opcao == 2:
         array_funcao[opcao]()
         break
+    clear()
     array_funcao[opcao]()
