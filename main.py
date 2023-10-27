@@ -31,7 +31,6 @@ while True:
 
     opcao = int(input("Escolha uma opção: ")) -1
     if opcao > len(array_funcao):
-        clear()
         continue
     elif opcao == 2:
         array_funcao[opcao]()
